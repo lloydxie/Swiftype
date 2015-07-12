@@ -1,0 +1,113 @@
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
+        <script type='text/javascript' src='jquery.ba-hashchange.min.js'></script>
+        <script type='text/javascript' src='jquery.swiftype.search.js'></script>
+        <link type='text/css' rel='stylesheet' href='search.css' media='all' />
+        <link type='text/css' rel='stylesheet' href='custom.css' media='all' />
+        
+        <div class="left">
+            <div class="st-dynamic-facets">
+            </div>
+        </div>
+
+        <script type='text/javascript'>
+        var customRenderFunction = function(document_type, item) {
+            var out = '<a href="' + item['url'] + '" class="st-search-result-link">' + '<img src="http://gallivant.swiftype.com' + item['thumbnail'] + '" class="thumbnail" />' +  item['title'] + '<br/>' + '</a>' + '<br/>';
+        return out; 
+        };
+
+        var searchConfig = {
+            facets: {}
+        };
+
+        var readFilters = function() {
+            return {
+                'page': {color: window.searchConfig.facets['color']}
+            }
+        }   
+
+        var reloadResults = function() {
+            $(window).hashchange();
+        };
+
+        var $facetContainer = $('.st-dynamic-facets');
+
+          $(function() {
+            $('#st-search-input').swiftypeSearch({
+              resultContainingElement: '#st-results-container',
+              renderFunction: customRenderFunction,
+              fetchFields: {"page": ['title', 'url', 'thumbnail']},
+              facets: { 'page': ['color'] },
+              postRenderFunction: bindControls,
+              filters: readFilters,
+              engineKey: 'VMnz-Ws16PuL8HyLPciN'
+            });
+          });
+
+        var bindControls = function(data) {
+            var resultInfo = data['info'],
+            facets = '';
+
+            $.each(resultInfo, function(documentType, typeInfo){
+                $.each(typeInfo.facets, function(field, facetCounts) {
+                    facets += ['<div class="facet"><h3>', field, '</h3></div>'].join('')
+                    $.each(facetCounts, function(label, count) {
+                        var status = "",
+                        id = encodeURIComponent(label).toLowerCase();
+                        if (window.searchConfig.facets[field] && window.searchConfig.facets[field].indexOf(label) > -1) {
+                          status = ' checked="checked"'
+                        }
+
+                        facets += '<input type="checkbox"'  + ' style="display:none" ' + status + ' name="' + field + '" id="' + id + '" value="' + label +  '"> <label for="' + id + '">' + ' (' + count + ')' + '<div class="color" id="' + id + '"></div>' + '</label>' + '<br/><br/>';
+                    });
+                    facets += '<a href="#" class="clear-selection" data-name="' + field + '">Clear all</a>'
+                });
+                $facetContainer.html(facets);
+            });
+
+            $('.color').each(function(i, obj){
+                $(obj)[0].style.backgroundColor = $(obj).attr('id');
+            });
+        };
+
+        $facetContainer.on('click', 'input', function(e) {
+            window.searchConfig.facets = {};
+            $('.st-dynamic-facets input[type="checkbox"]').each(function(idx, obj) {
+                var $checkbox = $(obj),
+                facet = $checkbox.attr('name');
+                if(!window.searchConfig.facets[facet]) { 
+                  window.searchConfig.facets[facet] = [];
+                }
+                if($checkbox.is(':checked')) { 
+                    window.searchConfig.facets[facet].push($checkbox.attr('value'));
+                }
+            });
+
+            reloadResults();
+        });
+
+        $facetContainer.on('click', 'a.clear-selection', function(e) {
+            e.preventDefault();
+            var name = $(this).data('name');
+            $('input[name=' + name + ']').attr('checked', false);
+            window.searchConfig.facets[name] = [];
+
+            reloadResults();
+        });
+
+
+        </script>
+      </head>
+      <body>
+
+        <div class="main">
+            <h1>Gallivant</h1>
+            <form>
+              Search your site: <input type='text' id='st-search-input' class='st-search-input' />
+            </form>
+            <div id="st-results-container" class="st-result-listing"></div>
+        </div>
+      </body>
+    </html>
